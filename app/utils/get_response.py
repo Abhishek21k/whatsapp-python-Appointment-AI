@@ -19,9 +19,9 @@ def get_user_info(mobile: str) -> str:
 
 
 @tool
-def add_new_user(mobile: str, name: str) -> str:
+def add_new_user(mobile: str, name: str, address: str) -> str:
     '''ADDS A NEW USER IN THE DATABASE.'''
-    response = str(addUser(mobile, name))
+    response = str(addUser(mobile, name, address))
     return response
 
 
@@ -33,9 +33,9 @@ def update_existing_user(mobile: str, name: str, address: str) -> str:
 
 
 @tool
-def get_clinics_list(latitude: int, longitude: int) -> ClinicList:
-    '''RETURN THE NEAREST 1 CLINIC IN THE DATABASE.GET THE USER COORDINATES FROM DATABASE TO GET THE NEAREST CLINIC.'''
-    clinics = get_clinics(latitude, longitude)
+def get_clinics_list(latitude: int, longitude: int, nearest: int) -> ClinicList:
+    '''RETURN THE NEAREST CLINIC IN THE DATABASE.GET THE USER COORDINATES FROM DATABASE TO GET THE NEAREST CLINIC.PASS THE NUMBER OF CLINICS YOU WANT TO GET (DEFAULT VALUE IS 1).'''
+    clinics = get_clinics(latitude, longitude, nearest)
     return ClinicList(message=clinics, status=200)
 
 
@@ -74,7 +74,7 @@ tools = [get_clinics_list, get_clinic_schedule,
          add_appointment, add_new_user,
          update_existing_user, update_user_appoitment]
 
-llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+llm = ChatOpenAI(model="gpt-4-turbo", temperature=0)
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
 
@@ -98,15 +98,21 @@ def generate_response(wa_id, name, message_body):
                 or getting the user's appointments status like list of completed or pending appointments.
 
             First check if user is present in database.
-            If user is not found in database, add him using the provided name and number, you can also formally ask for the user address , the address need not to be accurate just a landmark location will work.
+            **If user is not found in database, add him using the provided name and number, you have to formally ask for the user address from user only don't assume the address's of user**
             If user wants to update his info, ask him what field he wants to update and then only update that particular field.
             While adding an appointment provide the date in yyyy-mm-dd format.
             While updating an appointment provide the appointment id, clinic name, date and time in the provided format.
             While getting the clinic schedule provide the clinic name.
             Use the chat history to get the previous conversation and provide the response accordingly.
+            If the user is new, greet him and provide the information about the bot and the tools available.
+            If the user wants to book the appointment , DON'T ASK FOR CLINIC NAME FIRST FROM USER YOU SHOULD PROVIDE THE LIST OF CLINICS FIRST, just provide the list of available clinics and ask the user to select the clinic and then provide the date and time available to book the slot.
+
+            **NOTE:
+                DON'T ASSUME THE COORDINATES WHILE GETTING NEAREST CLINICS, ALWAYS GET THE COORDINATES OF USER FROM THE DATABASE ONLY.
 
             USER'S NAME: {name},
             MOBILE NUMBER: {wa_id[-12:]},
+            While replying the information, or the details of the appointment or clinics, provide the information in a structured Format.
 
             Start by saying greetings to the user and giving a short description that you are a Dental CLinic Appointment scheduler.'''
 
@@ -135,7 +141,7 @@ def generate_response(wa_id, name, message_body):
             "chat_history": messages,
         }
     )
-    print("messages:", messages)
+
     # Return text in uppercase
     resp = str(response["output"])
     add_conversation(wa_id, message_body, resp)

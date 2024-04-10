@@ -1,15 +1,16 @@
 import requests
 
 
-def get_clinics(latitude, longitude):
+def get_clinics(latitude, longitude, nearest):
     api_url = " http://localhost:3000/api/getClinics"
     payload = {
         "latitude": latitude,
-        "longitude": longitude
+        "longitude": longitude,
+        "nearest": nearest
     }
 
     try:
-        # Make the POST request with an empty JSON body
+
         response = requests.post(api_url, json=payload)
 
         # Check if the request was successful (status code 200)
@@ -108,11 +109,12 @@ def get_user_appointments_fromServer(mobile):
         return "An error occurred while Getting the appointments"
 
 
-def addUser(mobile, name):
+def addUser(mobile, name, address):
     api_url = f" http://localhost:3000/api/addUser"
     payload = {
         "mobile": mobile,
-        "name": name
+        "name": name,
+        "address": address
     }
 
     try:
